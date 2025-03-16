@@ -1,0 +1,4 @@
+pyinstaller --onefile --windowed --icon=icon.ico --add-data "icon.ico;." search20.py
+
+
+** iconita trebuie sa fie si in foldereul de unde se lanseaza comanda

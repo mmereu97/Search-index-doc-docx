@@ -98,3 +98,14 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Uses PyQt5 for the user interface
 - Implements multiple document parsing strategies for maximum compatibility
 - Optimized for Romanian document collections with special handling for diacritics
+
+## Licență
+
+Acest proiect este freeware
+
+## Autor și Contact
+
+Creat de Mihai Mereu
+
+Pentru întrebări sau sugestii, contactați: mihaimereu97@gmail.com
+

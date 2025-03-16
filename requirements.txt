@@ -1,0 +1,10 @@
+PyQt5==5.15.7
+python-docx==0.8.11
+olefile==0.46
+pywin32==306
+psutil==5.9.4
+
+
+
+
+
