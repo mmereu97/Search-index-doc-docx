@@ -1,0 +1,31 @@
+{
+    "window_geometry": "01d9d0cb000300000000007b0000017800000981000005230000007c0000019e000009800000052200000000000000000a000000007c0000019e0000098000000522",
+    "window_state": "000000ff00000000fd00000000000009050000038500000004000000040000000800000008fc00000000",
+    "window_maximized": false,
+    "window_pos_x": 123,
+    "window_pos_y": 376,
+    "window_width": 2309,
+    "window_height": 901,
+    "font_size": 14,
+    "font_family": "Arial",
+    "index_mode": "Adaugă la index",
+    "use_cache": true,
+    "partial_index_days": 30,
+    "modified_files_hours": 24,
+    "last_folder": "D:/PACK ORIGINAL OCTOMBRIE 2024 NEATINS",
+    "refresh_on_startup": true,
+    "main_splitter_sizes": [
+        598,
+        117
+    ],
+    "horizontal_splitter_sizes": [
+        1744,
+        538
+    ],
+    "stats_table_columns": [
+        367,
+        150
+    ],
+    "last_saved": "2025-03-16T12:44:46.351659",
+    "config_version": "1.0"
+}
