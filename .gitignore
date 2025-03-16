@@ -1,0 +1,5 @@
+.venv/
+.idea/
+build/
+*.log
+document_index.db
