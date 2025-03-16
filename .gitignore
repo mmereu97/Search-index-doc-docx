@@ -1,5 +1,6 @@
 .venv/
 .idea/
 build/
+dist/
 *.log
 document_index.db
