@@ -12,7 +12,7 @@
     "use_cache": true,
     "partial_index_days": 30,
     "modified_files_hours": 24,
-    "last_folder": "D:/PACK ORIGINAL OCTOMBRIE 2024 NEATINS",
+    "last_folder": "",
     "refresh_on_startup": true,
     "main_splitter_sizes": [
         714,
@@ -26,6 +26,10 @@
         367,
         150
     ],
+<<<<<<< HEAD
     "last_saved": "2025-03-17T23:22:26.433665",
+=======
+    "last_saved": "2025-03-17T12:50:00.201020",
+>>>>>>> ddac8fa4974294cfa4e0927038cac5ae719f1573
     "config_version": "1.0"
 }
