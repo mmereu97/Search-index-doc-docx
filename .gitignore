@@ -4,3 +4,5 @@ build/
 dist/
 *.log
 document_index.db
+*.json
+search20.exe
