@@ -57,6 +57,8 @@ class SettingsDialog(QDialog):
         self.setup_ui()
         print_debug("Începere load_settings pentru SettingsDialog", start_time)
         self.load_settings()
+        # Adaugă această linie
+        self.set_dialog_icon()
         print_debug("Finalizare inițializare SettingsDialog", start_time)
 
     def setup_ui(self):
@@ -307,6 +309,12 @@ class SettingsDialog(QDialog):
             self.parent.db_manager.clear_index()
             self.parent.status_label.setText("Index curățat cu succes")
             self.parent.update_stats(self.parent.db_manager.get_document_stats())
+
+    def set_dialog_icon(self):
+        """Setează iconița pentru dialogul de setări"""
+        icon_path = self.parent.find_icon_path("icon.ico")
+        if icon_path and os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
     def accept(self):
         """Salvează setările când se apasă OK"""
@@ -1772,6 +1780,9 @@ class SearchApp(QMainWindow):
         print_debug("Începere load_config", start_time)
         self.load_config()
         
+        # Adaugă această linie
+        self.set_app_icon()
+        
         self.db_manager.partial_index_days = self.partial_index_days
         self.db_manager.modified_files_hours = self.modified_files_hours
 
@@ -2776,6 +2787,37 @@ class SearchApp(QMainWindow):
         self.status_label.setText(f"Indexare {index_type} completă: {indexed_files} fișiere procesate în {time_str}")
         self.progress_bar.setValue(100)
         self.save_config()
+
+    def set_app_icon(self):
+        """Setează iconița aplicației pentru fereastră și taskbar"""
+        icon_path = self.find_icon_path("icon.ico")
+        if icon_path and os.path.exists(icon_path):
+            app_icon = QIcon(icon_path)
+            self.setWindowIcon(app_icon)
+            # Setează iconița și pentru aplicație
+            app = QApplication.instance()
+            if app:
+                app.setWindowIcon(app_icon)
+
+    def find_icon_path(self, icon_name):
+        """Găsește calea către fișierul cu iconița"""
+        # Verifică dacă iconița există în directorul curent
+        if os.path.exists(icon_name):
+            return icon_name
+            
+        # Verifică dacă iconița există în folderul resurselor PyInstaller
+        base_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+        icon_path = os.path.join(base_path, icon_name)
+        if os.path.exists(icon_path):
+            return icon_path
+            
+        # În directorul de resurse al PyInstaller
+        if hasattr(sys, '_MEIPASS'):
+            icon_path = os.path.join(sys._MEIPASS, icon_name)
+            if os.path.exists(icon_path):
+                return icon_path
+                
+        return None
 
 def main():
     start_time = print_debug("Începere main()")
