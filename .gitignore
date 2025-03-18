@@ -3,11 +3,7 @@
 build/
 dist/
 *.log
-<<<<<<< HEAD
 *.json
 document_index.db
-=======
-document_index.db
-*.json
 search20.exe
->>>>>>> ddac8fa4974294cfa4e0927038cac5ae719f1573
+
