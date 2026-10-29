@@ -1,111 +1,117 @@
-# Document Search System
+# 🔎 DocSearch
 
-A powerful document indexing and search application built with Python and PyQt5, optimized for Microsoft Office documents.
+**Instant full-text search across hundreds of thousands of Word documents** (`.doc`, `.docx`, `.txt`) on local or network drives.
+Built for real office archives: 180,000+ files on a NAS, searched in milliseconds, kept up to date with incremental re-indexing.
 
-![Screenshot aplicație](Capture.PNG)
+DocSearch 2.0 is a complete rewrite of my earlier single-file tool (`search20.py`) on a clean, layered architecture.
 
-## Features
+![DocSearch screenshot](Capture.PNG)
 
-- **Smart Document Indexing**: Efficiently indexes `.doc` and `.docx` files with incremental updates
-- **Full-Text Search**: Fast and accurate text search through indexed documents
-- **Smart Caching**: Improves search performance with intelligent result caching
-- **Document Tracking**: Monitors document changes and identifies frequently modified files
-- **CNP Detection**: Special handling for Romanian personal identification numbers (CNP)
-- **Configurable Settings**: Customizable indexing modes, refresh intervals, and UI preferences
+**Tech:** Python · PyQt5 · SQLite FTS5 · olefile · Word COM automation (pywin32) · PyInstaller
 
-## Requirements
+---
 
-- Python 3.6+
-- PyQt5
-- python-docx
-- olefile
-- PyWin32
-- Additional libraries listed in the imports section
+## ✨ Features
 
-## Installation
+- **Full-text search with SQLite FTS5**: exact-phrase matching with prefix search on the last word, diacritic-insensitive (Romanian `ș ț ă î â` are normalised).
+- **Number search**: queries made only of digits search a dedicated index of numeric sequences (5+ digits: ID numbers, file numbers), including partial fragments.
+- **Incremental indexing**: one pass over the disk, files with unchanged `mtime` + size are skipped, deleted files are removed from the index. Folders whose date did not change can be skipped entirely.
+- **Quick index vs. full index**: the quick index only looks at files changed in the last *N* days (or since the last run); a full index runs on demand.
+- **Archive-aware**: year-named folders (`2015`, `2016`, …) older than the last *N* years, and folders you mark as archived, are treated as archive and not rescanned every time.
+- **Index health indicator**: a traffic light (green / yellow / red) explains in plain language when the index is out of date and what to do.
+- **Database check and remap**: shows where the index points and whether the files still exist on this PC; if the archive moved to another drive letter, a root can be remapped without re-indexing.
+- **Network drive friendly**: wakes up mapped drives that Windows leaves "disconnected" after boot, and warns when the database itself sits on a network drive (SQLite WAL is not safe there).
+- **Document metadata on hover**: "created by" / "last saved by", read directly from `docProps/core.xml` (`.docx`) or the OLE `SummaryInformation` stream (`.doc`), without opening the document.
+- **Responsive UI**: indexing runs in a thread pool, can be **stopped** at any time, and progress updates are throttled to ~5/s so the Qt event loop never chokes.
+- **Single instance**: starting the app a second time brings the existing window to the front.
 
-1. Clone this repository
-2. Install required dependencies:
+---
 
-```bash
-pip install PyQt5 python-docx olefile pywin32 psutil
+## 🛠️ Architecture
+
+```
+docsearch/
+├── config.py          AppConfig: all settings, debounced atomic save (os.replace)
+├── paths.py           where Data/ lives, network-drive detection and wake-up
+├── storage/
+│   ├── database.py    SQLite + FTS5 behind a SINGLE writer thread
+│   └── models.py      DocumentRecord, SearchHit, IndexReport
+├── indexing/
+│   ├── scanner.py     filesystem walk, age window, excluded / archived folders
+│   ├── readers.py     per-extension readers (.docx/.txt from bytes, .doc via Word COM)
+│   ├── indexer.py     orchestration: diff, batches, report (no Qt, no SQL)
+│   ├── health.py      index health diagnosis (no Qt, directly testable)
+│   └── doc_meta.py    author / last-saved-by metadata
+├── search/
+│   └── normalize.py   diacritics + numeric sequence extraction
+└── ui/                PyQt5 windows and QRunnable workers (no SQL, no file reading)
 ```
 
-3. Run the application:
+### Design decisions
+
+| Problem in the old version | Solution in 2.0 |
+|---|---|
+| Per-thread connection pool, mixed direct connections, "database is locked" errors, manual WAL file deletion | **One writer thread** fed by a job queue; reads use short-lived connections of their own. WAL works as intended. |
+| `LIKE '%…%'` over the full content (no index possible) | **FTS5** full-text index |
+| Search cache invalidated on every indexed document | No cache: FTS5 is fast enough |
+| `.docx` read from paragraphs only: text in **tables**, **headers** and text boxes was lost | Parsed directly from the XML inside the archive: ~10× faster than python-docx, includes tables, text boxes, headers and footers, skips tracked deletions, constant memory on huge files |
+| `.doc` decoded from raw OLE bytes (garbage in the index) | Word COM only, `ReadOnly=True`, one long-lived Word session restarted periodically, guaranteed close |
+| A new Word instance per `.doc` file (~0.5 s each) | `WordSession` keeps one instance for the whole run |
+| Each `.docx` read twice over the network (hash + text) | Read once as bytes; hash and text come from the same buffer |
+| Config saved on every pixel of window resize | Debounced save, at most once per second, atomic |
+| Two passes over the disk (count, then index) | Single pass, progress reported on the fly |
+| Indexing could not be stopped | **Stop** button, clean cancellation at the next file |
+
+Indexing, health checks and search have no Qt dependency, so the same code runs from the UI, from tests or from the command line.
+
+---
+
+## 🚀 Getting started
+
+Requirements: Python 3.10+ on Windows (Microsoft Word is needed only for legacy `.doc` files; `.docx` and `.txt` work on any OS).
 
 ```bash
-python search20.py
+git clone https://github.com/mmereu97/Search-index-doc-docx.git Project
+cd Project
+pip install -r requirements.txt
+python main.py
 ```
 
-## Usage
+User data (index database, settings, log) is stored in a `Data/` folder **next to** the project folder (or next to `DocSearch.exe`), never inside the repository:
 
-### Initial Setup
+```
+<root>/
+├── Project/     this repository
+└── Data/        document_index.db, config.json, search_app.log (git-ignored)
+```
 
-1. Open the application
-2. Click "Setări" (Settings) to access configuration options
-3. Select a directory to index by clicking "Director de indexat" (Directory to index)
-4. Choose the indexing mode:
-   - "Indexare Rapidă" (Quick indexing) - only indexes recently modified files
-   - "Indexare de la Începuturi" (Full indexing) - indexes all documents from scratch
+### Tests
 
-### Searching Documents
+```bash
+python test_core.py
+```
+A self-contained test suite for the core (no UI): 160+ checks covering search semantics, incremental indexing, archive rules, health diagnosis, remapping and document readers. It builds its own `.docx` test files with `python-docx`.
 
-1. Enter your search query in the text field
-2. Click "Caută" (Search) or press Enter
-3. Results will appear in the left panel
-4. Double-click any result to open the document
-5. Right-click for additional options (open file or containing folder)
+`dev/break_ui_fixture.py` builds a worst-case test archive and opens the real UI against it (empty, one result, 2,000+ results, very long names), with an option to save screenshots, as a visual regression test.
 
-### Advanced Features
+### Building the executable
 
-- **Sort Results**: Use the dropdown menu to sort by name, folder, or modification date
-- **Modified Files Tracking**: View recently modified files by clicking on the corresponding statistic
-- **Statistical Overview**: The right panel displays key metrics about your document collection
-- **Font Size Adjustment**: Customize the interface font size in the settings dialog
+Double-click `build_exe.bat` (or run `pyinstaller DocSearch.spec`). The output goes to `..\dist\DocSearch\`, outside the repository. Distribute the whole `DocSearch` folder, not just the `.exe`.
 
-## Configuration Options
+---
 
-- **Font Size**: Adjust the application text size
-- **Indexing Mode**: Choose between adding to existing index or replacing it
-- **Cache Usage**: Enable/disable search result caching
-- **Modified Files Period**: Set how many hours back to consider files as "recently modified"
-- **Partial Index Period**: Set how many days back to consider for partial indexing
-- **Startup Reindexing**: Option to automatically reindex on application startup
+## 🔒 Security note
 
-## Technical Details
+The index stores the normalised text of every document, unencrypted. For archives with personal data, keep the `Data/` folder on an encrypted disk (e.g. BitLocker) and restrict folder permissions. Encrypting the database (SQLCipher) is a natural next step.
 
-The application uses:
+## 🗺️ Possible next steps
 
-- SQLite database for storing document information and search indices
-- Multiple extraction methods for different document formats
-- Thread-based workers for non-blocking UI during intensive operations
-- Automatic recovery from interrupted indexing sessions
-- Intelligent document change detection
-- Error handling for corrupt or inaccessible files
+- result snippets using FTS5 `snippet()`
+- live folder monitoring (watchdog) instead of periodic re-indexing
+- trigram index for substring search on numbers if the volume grows
 
-## Troubleshooting
+---
 
-- **Slow Indexing**: For large document collections, use "Indexare Rapidă" instead of full indexing
-- **Unreadable Files**: Some protected or corrupt documents will be marked as unreadable
-- **Database Issues**: If you encounter database errors, use "Curăță Index" to reset the database
+## 👤 Author
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Uses PyQt5 for the user interface
-- Implements multiple document parsing strategies for maximum compatibility
-- Optimized for Romanian document collections with special handling for diacritics
-
-## Licență
-
-Acest proiect este freeware
-
-## Autor și Contact
-
-Creat de Mihai Mereu
-
-Pentru întrebări sau sugestii, contactați: mihaimereu97@gmail.com
-
+Mihai Mereu · [GitHub](https://github.com/mmereu97)

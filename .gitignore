@@ -1,8 +1,20 @@
-.venv/
-.idea/
+# Build output (build_exe.bat writes to ../build and ../dist, outside the repo)
+__pycache__/
+*.pyc
 build/
 dist/
+
+# Safety net: user data never belongs in the repo.
+# The app keeps it in ../Data, outside this folder (index, config, log).
+Data/
+*.db
+*.db-wal
+*.db-shm
+config.json
 *.log
-*.json
-document_index.db
-search20.exe
+
+# IDE / virtual environments
+.idea/
+.vscode/
+.venv/
+venv/
